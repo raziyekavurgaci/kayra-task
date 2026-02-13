@@ -1,47 +1,94 @@
-# Product API
+# Product Management API - Onion Architecture
 
-Ürün yönetimi için geliştirilmiş RESTful API. Temel CRUD işlemlerini destekler.
+Modern mimari prensipleriyle geliştirilmiş, ölçeklenebilir ve sürdürülebilir bir ürün yönetim API'si.
+
+## 🏗️ Mimari
+
+Bu proje **Onion Architecture** (Soğan Mimarisi) kullanılarak geliştirilmiştir. Katmanlar merkeze doğru bağımlıdır ve iş mantığı dış dünyadan izole edilmiştir.
+
+
+**1. Core (Domain Layer)**
+- Entities (Product, User)
+- Core Interfaces (IRepository, ICacheService)
+- İş kuralları ve domain logic
+
+**2. Application Layer**
+- DTOs (Data Transfer Objects)
+- CQRS Pattern (Commands & Queries)
+- Service Interfaces
+- İş mantığı soyutlamaları
+
+**3. Infrastructure Layer**
+- DbContext (Entity Framework Core)
+- Repositories (Concrete implementations)
+- Services (ProductService, AuthService, TokenService)
+- Caching (Redis)
+- External dependencies
+
+**4. API (Presentation Layer)**
+- Controllers (RESTful endpoints)
+- Middleware (Global exception handler)
+- Configuration (Program.cs)
+- Swagger/OpenAPI
 
 ## 🛠️ Kullanılan Teknolojiler
 
 - **.NET 10.0** - ASP.NET Core Web API
 - **C#** - Programlama dili
-- **PostgreSQL** - Veritabanı
-- **Entity Framework Core** - ORM
-- **Swagger** - API dokümantasyonu
+- **PostgreSQL** - İlişkisel veritabanı
+- **Entity Framework Core 9.0** - ORM
+- **Redis** - Distributed caching
+- **JWT** - Authentication & Authorization
+- **BCrypt** - Password hashing
+- **Swagger/OpenAPI** - API documentation
+- **Serilog** - Structured logging
+
+## � Özellikler
+
+### Mimari Patterns
+- ✅ **Onion Architecture** - Katmanlı ve bağımlılık ters çevirme
+- ✅ **CQRS Pattern** - Command Query Responsibility Segregation
+- ✅ **Repository Pattern** - Veri erişim soyutlaması
+- ✅ **Dependency Injection** - Gevşek bağlılık
+- ✅ **DTO Pattern** - Veri transfer objeleri
+
+### Teknik Özellikler
+- ✅ JWT Authentication - Güvenli kimlik doğrulama
+- ✅ Redis Caching - Performans optimizasyonu
+- ✅ Global Exception Handling - Merkezi hata yönetimi
+- ✅ Async/Await - Asenkron programlama
+- ✅ Input Validation - Veri doğrulama
+- ✅ Password Hashing - BCrypt ile güvenli şifreleme
+- ✅ Swagger UI - İnteraktif API dokümantasyonu
 
 ## 📁 Proje Yapısı
 
 ```
-ProductApi/
-├── Controllers/          # API endpoint'leri
-├── Services/            # İş mantığı katmanı
-├── Repositories/        # Veritabanı işlemleri
-├── Models/              # Veritabanı modelleri
-├── DTOs/                # Veri transfer objeleri
-├── Data/                # Veritabanı context
-└── Program.cs           # Uygulama başlangıcı
+src/
+├── Core/                  # Domain Layer
+│   ├── Entities/          # Product, User
+│   └── Interfaces/        # IRepository, ICacheService
+├── Application/           # Application Layer
+│   ├── DTOs/              # Data Transfer Objects
+│   ├── Commands/          # CQRS Commands
+│   ├── Queries/           # CQRS Queries
+│   └── Interfaces/        # Service Interfaces
+├── Infrastructure/        # Infrastructure Layer
+│   ├── Data/              # DbContext
+│   ├── Repositories/      # Repository Implementations
+│   ├── Services/          # Business Services
+│   └── Caching/           # Redis Cache
+└── API/                   # Presentation Layer
+    ├── Controllers/       # REST Controllers
+    ├── Middleware/        # Exception Handler
+    └── Program.cs         # Configuration
 ```
-
-## 🏗️ Mimari
-
-Proje **katmanlı mimari** prensiplerine göre geliştirilmiştir:
-
-- **Controller Katmanı**: HTTP isteklerini karşılar
-- **Service Katmanı**: İş mantığı ve validasyon
-- **Repository Katmanı**: Veritabanı işlemleri
-- **Model/DTO Katmanı**: Veri yapıları
-
-**SOLID Prensipleri:**
-- Dependency Injection kullanılmıştır
-- Her katman tek sorumluluk prensibine uyar
-- Interface'ler ile gevşek bağlılık sağlanmıştır
 
 ## 📋 Gereksinimler
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
-- [PostgreSQL](https://www.postgresql.org/download/)
-- PostgreSQL kullanıcı adı ve şifresi
+- [PostgreSQL 14+](https://www.postgresql.org/download/)
+- [Redis](https://redis.io/download) (opsiyonel, cache için)
 
 ## 🚀 Kurulum
 
@@ -54,20 +101,24 @@ cd kayra-task
 
 ### 2. PostgreSQL Veritabanını Oluşturun
 
-PostgreSQL'de `kayra_task` veritabanını oluşturun:
-
 ```sql
 CREATE DATABASE kayra_task;
 ```
 
 ### 3. Bağlantı Ayarlarını Yapılandırın
 
-`api/ProductApi/appsettings.json` dosyasında PostgreSQL bağlantı bilgilerinizi güncelleyin:
+`src/API/appsettings.json` dosyasını düzenleyin:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=kayra_task;Username=postgres;Password=yourpassword"
+    "DefaultConnection": "Host=localhost;Database=kayra_task;Username=postgres;Password=yourpassword",
+    "Redis": "localhost:6379"
+  },
+  "Jwt": {
+    "Key": "super-secret-jwt-key-minimum-32-characters-long",
+    "Issuer": "ProductManagementAPI",
+    "Audience": "ProductManagementClient"
   }
 }
 ```
@@ -75,152 +126,31 @@ CREATE DATABASE kayra_task;
 ### 4. Paketleri Yükleyin
 
 ```bash
-cd api/ProductApi
 dotnet restore
 ```
 
 ### 5. Veritabanı Migration'ını Çalıştırın
 
 ```bash
-dotnet ef database update
+dotnet ef migrations add InitialCreate --project src/Infrastructure --startup-project src/API
+dotnet ef database update --project src/Infrastructure --startup-project src/API
 ```
 
-Bu komut `Products` tablosunu otomatik olarak oluşturacaktır.
+### 6. Redis'i Başlatın (Opsiyonel)
 
-## ▶️ Çalıştırma
+**Docker ile:**
+```bash
+docker run -d --name redis -p 6379:6379 redis
+```
+
+### 7. Uygulamayı Çalıştırın
 
 ```bash
+cd src/API
 dotnet run
 ```
 
-Uygulama varsayılan olarak şu adreste çalışacaktır:
-```
-http://localhost:5044
-```
-
-Swagger UI için tarayıcınızda şu adresi açın:
-```
-http://localhost:5044
-```
-
-## 📚 API Endpoint'leri
-
-### Tüm Ürünleri Listele
-```http
-GET /api/products
-```
-
-**Cevap:**
-```json
-[
-  {
-    "id": 1,
-    "name": "Laptop",
-    "description": "Gaming laptop",
-    "price": 15000.00,
-    "stock": 10,
-    "createdDate": "2026-02-08T13:00:00Z",
-    "updatedDate": null
-  }
-]
-```
-
-### Tek Ürün Getir
-```http
-GET /api/products/{id}
-```
-
-**Cevap:**
-```json
-{
-  "id": 1,
-  "name": "Laptop",
-  "description": "Gaming laptop",
-  "price": 15000.00,
-  "stock": 10,
-  "createdDate": "2026-02-08T13:00:00Z",
-  "updatedDate": null
-}
-```
-
-### Yeni Ürün Ekle
-```http
-POST /api/products
-Content-Type: application/json
-
-{
-  "name": "Laptop",
-  "description": "Gaming laptop",
-  "price": 15000.00,
-  "stock": 10
-}
-```
-
-**Cevap:** `201 Created`
-
-### Ürün Güncelle
-```http
-PUT /api/products/{id}
-Content-Type: application/json
-
-{
-  "name": "Laptop Pro",
-  "description": "Updated description",
-  "price": 18000.00,
-  "stock": 5
-}
-```
-
-**Cevap:** `200 OK`
-
-### Ürün Sil
-```http
-DELETE /api/products/{id}
-```
-
-**Cevap:** `204 No Content`
-
-## 🧪 Test
-
-Swagger UI kullanarak API'yi test edebilirsiniz:
-
-1. Uygulamayı çalıştırın: `dotnet run`
-2. Tarayıcıda açın: `http://localhost:5044`
-3. Swagger arayüzünden endpoint'leri test edin
-
-## 🔧 Geliştirme
-
-### Yeni Migration Oluşturma
-
-```bash
-dotnet ef migrations add MigrationName
-dotnet ef database update
-```
-
-### Build
-
-```bash
-dotnet build
-```
-
-### Test
-
-```bash
-dotnet test
-```
-
-## 📝 Özellikler
-
-- ✅ RESTful API tasarımı
-- ✅ Asenkron programlama (async/await)
-- ✅ Entity Framework Core ile veritabanı yönetimi
-- ✅ Katmanlı mimari (Controller-Service-Repository)
-- ✅ Dependency Injection
-- ✅ DTO pattern ile veri transferi
-- ✅ Input validasyonu
-- ✅ Exception handling
-- ✅ Swagger/OpenAPI dokümantasyonu
-- ✅ PostgreSQL veritabanı desteği
+**Swagger UI:** `http://localhost:5214`
 
 ## 🗂️ Veritabanı Şeması
 
@@ -231,11 +161,92 @@ dotnet test
 | Id | INTEGER | Primary Key, otomatik artan |
 | Name | VARCHAR(200) | Ürün adı (zorunlu) |
 | Description | VARCHAR(1000) | Ürün açıklaması (opsiyonel) |
-| Price | DECIMAL(18,2) | Ürün fiyatı (zorunlu) |
-| Stock | INTEGER | Stok miktarı (zorunlu) |
+| Price | DECIMAL(18,2) | Ürün fiyatı (zorunlu, > 0) |
+| Stock | INTEGER | Stok miktarı (zorunlu, >= 0) |
 | CreatedDate | TIMESTAMP | Oluşturulma tarihi (otomatik) |
 | UpdatedDate | TIMESTAMP | Güncellenme tarihi (opsiyonel) |
+
+### Users Tablosu
+
+| Kolon | Tip | Açıklama |
+|-------|-----|----------|
+| Id | INTEGER | Primary Key, otomatik artan |
+| Username | VARCHAR(50) | Kullanıcı adı (zorunlu, unique) |
+| Email | VARCHAR(100) | Email (zorunlu, unique) |
+| PasswordHash | VARCHAR(255) | BCrypt hash (zorunlu) |
+| Role | VARCHAR(20) | Kullanıcı rolü (varsayılan: "User") |
+| CreatedDate | TIMESTAMP | Oluşturulma tarihi (otomatik) |
+| UpdatedDate | TIMESTAMP | Güncellenme tarihi (opsiyonel) |
+
+## 🔧 Geliştirme
+
+### Yeni Migration Oluşturma
+
+```bash
+dotnet ef migrations add MigrationName --project src/Infrastructure --startup-project src/API
+dotnet ef database update --project src/Infrastructure --startup-project src/API
+```
+
+### Build
+
+```bash
+dotnet build
+```
+
+### Clean
+
+```bash
+dotnet clean
+```
+
+## 🧪 Test
+
+Swagger UI kullanarak API'yi test edebilirsiniz:
+
+1. Uygulamayı çalıştırın: `dotnet run`
+2. Tarayıcıda açın: `http://localhost:5214`
+3. Swagger arayüzünden endpoint'leri test edin
+
+**Test Senaryosu:**
+1. `/api/auth/register` ile kullanıcı oluşturun
+2. `/api/auth/login` ile token alın
+3. `/api/products` ile ürün ekleyin
+4. `/api/products` ile tüm ürünleri listeleyin
+
+## 🎯 CQRS Pattern
+
+Proje CQRS (Command Query Responsibility Segregation) pattern kullanır:
+
+**Commands (Yazma):**
+- CreateProductCommand
+- UpdateProductCommand
+- DeleteProductCommand
+- RegisterCommand
+- LoginCommand
+
+**Queries (Okuma):**
+- GetAllProductsQuery
+- GetProductByIdQuery
+
+## 🔐 Güvenlik
+
+- **JWT Authentication**: Stateless token-based authentication
+- **BCrypt**: Password hashing (cost factor: 10)
+- **Input Validation**: DTO level validation
+- **CORS**: Configurable cross-origin policy
+- **HTTPS**: Production için önerilir
+
+## 📊 Performans
+
+- **Redis Caching**: 5 dakika TTL ile product cache
+- **Async/Await**: Non-blocking I/O operations
+- **Connection Pooling**: EF Core ve Redis için
+- **Lazy Loading**: Disabled (explicit loading)
 
 ## 📄 Lisans
 
 Bu proje eğitim amaçlı geliştirilmiştir.
+
+## 👨‍💻 Geliştirici
+
+Onion Architecture, CQRS, JWT, ve Redis kullanılarak modern .NET standartlarına uygun olarak geliştirilmiştir.
