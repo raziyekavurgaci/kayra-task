@@ -152,31 +152,6 @@ dotnet run
 
 **Swagger UI:** `http://localhost:5214`
 
-## 🗂️ Veritabanı Şeması
-
-### Products Tablosu
-
-| Kolon | Tip | Açıklama |
-|-------|-----|----------|
-| Id | INTEGER | Primary Key, otomatik artan |
-| Name | VARCHAR(200) | Ürün adı (zorunlu) |
-| Description | VARCHAR(1000) | Ürün açıklaması (opsiyonel) |
-| Price | DECIMAL(18,2) | Ürün fiyatı (zorunlu, > 0) |
-| Stock | INTEGER | Stok miktarı (zorunlu, >= 0) |
-| CreatedDate | TIMESTAMP | Oluşturulma tarihi (otomatik) |
-| UpdatedDate | TIMESTAMP | Güncellenme tarihi (opsiyonel) |
-
-### Users Tablosu
-
-| Kolon | Tip | Açıklama |
-|-------|-----|----------|
-| Id | INTEGER | Primary Key, otomatik artan |
-| Username | VARCHAR(50) | Kullanıcı adı (zorunlu, unique) |
-| Email | VARCHAR(100) | Email (zorunlu, unique) |
-| PasswordHash | VARCHAR(255) | BCrypt hash (zorunlu) |
-| Role | VARCHAR(20) | Kullanıcı rolü (varsayılan: "User") |
-| CreatedDate | TIMESTAMP | Oluşturulma tarihi (otomatik) |
-| UpdatedDate | TIMESTAMP | Güncellenme tarihi (opsiyonel) |
 
 ## 🔧 Geliştirme
 
